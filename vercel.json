@@ -1,0 +1,12 @@
+{
+  "framework": "vite",
+  "buildCommand": "npx tsc && npx vite build",
+  "devCommand": "npx vite",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
