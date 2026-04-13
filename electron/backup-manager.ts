@@ -1,7 +1,7 @@
-import { app } from 'electron'
-import path from 'node:path'
-import fs from 'node:fs'
-import { getDatabasePath, getDatabase } from './database/sqlite'
+const { app } = require('electron')
+const path = require('node:path')
+const fs = require('node:fs')
+const { getDatabasePath, getDatabase } = require('./database/sqlite')
 
 const BACKUP_DIR = path.join(app.getPath('userData'), 'backups')
 const MAX_BACKUPS = 30 // Keep last 30 daily backups

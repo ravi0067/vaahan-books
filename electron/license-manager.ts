@@ -1,7 +1,7 @@
-import Store from 'electron-store'
-import crypto from 'node:crypto'
-import os from 'node:os'
-import { networkInterfaces } from 'node:os'
+const Store = require('electron-store')
+const crypto = require('node:crypto')
+const os = require('node:os')
+const { networkInterfaces } = require('node:os')
 
 // ── Types ──────────────────────────────────────────────────
 export interface LicenseInfo {

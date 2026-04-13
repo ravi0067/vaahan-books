@@ -1,7 +1,7 @@
-import Database from 'better-sqlite3'
-import path from 'node:path'
-import { app } from 'electron'
-import fs from 'node:fs'
+const Database = require('better-sqlite3')
+const path = require('node:path')
+const { app } = require('electron')
+const fs = require('node:fs')
 
 let db: Database.Database | null = null
 
