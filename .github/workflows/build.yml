@@ -30,7 +30,14 @@ jobs:
       - name: Build React and Electron TS
         run: npx tsc && npx vite build
 
-      - name: Build Electron (.exe) & Release
+      - name: Build Electron (.exe)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win --publish always
+        run: npx electron-builder --win --publish never
+
+      - name: Force Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd release
+          gh release upload v1.0.0 "VaahanBooks Setup 1.0.0.exe" --clobber
