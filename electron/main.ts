@@ -4,6 +4,8 @@ import { initDatabase, getDatabase } from './database/sqlite'
 import { LicenseManager } from './license-manager'
 import { BackupManager } from './backup-manager'
 
+import fs from 'node:fs'
+
 // Disable GPU acceleration for stability
 app.disableHardwareAcceleration()
 
@@ -15,6 +17,13 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
 const isDev = !!VITE_DEV_SERVER_URL
 
 function createWindow() {
+  const preloadPath = path.join(__dirname, 'preload.js').replace('app.asar', 'app.asar.unpacked')
+  
+  // FIX 2: Preload existence check
+  if (!fs.existsSync(preloadPath)) {
+    console.error('❌ Preload file not found:', preloadPath)
+  }
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -23,7 +32,7 @@ function createWindow() {
     title: 'VaahanBooks',
     icon: path.join(__dirname, '../public/icon.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false
@@ -39,12 +48,23 @@ function createWindow() {
     mainWindow?.show()
   })
 
-  // Load the app
+  // FIX 4: Production safe loading
   if (VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(VITE_DEV_SERVER_URL)
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+    const indexPath = path.join(__dirname, '../dist/index.html')
+
+    if (!fs.existsSync(indexPath)) {
+      console.error('❌ index.html not found:', indexPath)
+      // Fallback for some build structures
+      const fallbackPath = path.join(__dirname, 'index.html')
+      if (fs.existsSync(fallbackPath)) {
+        mainWindow.loadFile(fallbackPath)
+      }
+    } else {
+      mainWindow.loadFile(indexPath)
+    }
   }
 
   // Open external links in browser
