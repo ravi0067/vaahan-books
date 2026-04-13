@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+import { contextBridge, ipcRenderer } from 'electron'
 
 // ── Expose secure API to renderer process ──────────────────
 contextBridge.exposeInMainWorld('electronAPI', {

@@ -1,8 +1,8 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
-const path = require('node:path')
-const { initDatabase, getDatabase } = require('./database/sqlite')
-const { LicenseManager } = require('./license-manager')
-const { BackupManager } = require('./backup-manager')
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import path from 'node:path'
+import { initDatabase, getDatabase } from './database/sqlite'
+import { LicenseManager } from './license-manager'
+import { BackupManager } from './backup-manager'
 
 // Disable GPU acceleration for stability
 app.disableHardwareAcceleration()
