@@ -48,7 +48,7 @@ export default function PluginMarketplace() {
                     <p className="text-[10px] text-surface-400 mt-1">by {p.author}</p>
                     <div className="mt-3 flex items-center justify-between">
                        <span className="text-green-400 text-[10px] font-bold border border-green-500/30 bg-green-500/10 px-2 py-0.5 rounded">ACTIVE</span>
-                       <ShieldCheck className="text-green-400" size={14} title="Sandboxed & Verified" />
+                       <ShieldCheck className="text-green-400" size={14} />
                     </div>
                  </div>
               ))}
