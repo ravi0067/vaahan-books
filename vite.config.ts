@@ -12,13 +12,14 @@ export default defineConfig({
         entry: 'electron/main.ts',
         vite: {
           build: {
+            minify: false,
             outDir: 'dist-electron',
             lib: {
               entry: 'electron/main.ts',
               formats: ['cjs']
             },
             rollupOptions: {
-              external: ['better-sqlite3', 'electron-store', 'node-machine-id']
+              external: ['electron', 'better-sqlite3', 'electron-store', 'node-machine-id']
             }
           }
         }
@@ -30,10 +31,14 @@ export default defineConfig({
         },
         vite: {
           build: {
+            minify: false,
             outDir: 'dist-electron',
             lib: {
               entry: 'electron/preload.ts',
               formats: ['cjs']
+            },
+            rollupOptions: {
+              external: ['electron']
             }
           }
         }

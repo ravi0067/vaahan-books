@@ -5,6 +5,7 @@
   "main": "dist-electron/main.js",
   "author": "Ravi Accounting Services <support@vaahanerp.com>",
   "license": "UNLICENSED",
+  "type": "commonjs",
   "private": true,
   "scripts": {
     "dev": "vite",
