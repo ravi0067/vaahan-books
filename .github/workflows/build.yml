@@ -23,7 +23,9 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install --ignore-scripts
+          npm rebuild esbuild
 
       - name: Build React and Electron TS
         run: npx tsc && npx vite build
