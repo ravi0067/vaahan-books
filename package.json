@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "AI-Powered Desktop Billing & Accounting Software - Tally Prime Alternative for Indian SMBs",
   "main": "dist-electron/main.js",
-  "author": "VaahanERP <admin@vaahanerp.com>",
+  "author": "Ravi Accounting Services <support@vaahanerp.com>",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -42,10 +42,13 @@
     "lucide-react": "^0.577.0",
     "node-machine-id": "^1.1.12",
     "pdfkit": "^0.16.0",
+    "pg": "^8.20.0",
+    "png-to-ico": "^3.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.6.0",
     "recharts": "^2.15.3",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "zustand": "^5.0.12"
@@ -75,6 +78,7 @@
   "build": {
     "appId": "com.vaahanerp.books",
     "productName": "VaahanBooks",
+    "copyright": "Copyright © 2026 Ravi Accounting Services",
     "directories": {
       "output": "release"
     },
@@ -84,14 +88,16 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/icon.ico"
+      "icon": "public/icon.ico",
+      "publisherName": "Ravi Accounting Services"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerIcon": "public/icon.ico"
+      "installerIcon": "public/icon.ico",
+      "uninstallDisplayName": "VaahanBooks (Ravi Accounting Services)"
     },
     "mac": {
       "target": "dmg",
