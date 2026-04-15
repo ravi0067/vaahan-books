@@ -14,7 +14,7 @@ interface LicenseState {
 
 export const useLicenseStore = create<LicenseState>((set) => ({
   license: null,
-  isLoading: false, // 👈 important (start me loading false)
+  isLoading: false,
   isActivated: false,
 
   setLicense: (license) => set({
@@ -24,12 +24,12 @@ export const useLicenseStore = create<LicenseState>((set) => ({
 
   setLoading: (isLoading) => set({ isLoading }),
 
-  // 🔥 FULLY DISABLED (no backend call)
+  // License check disabled
   checkLicense: async () => {
     set({ isLoading: false })
   },
 
-  // 🔥 FAKE ACTIVATION (any key works)
+  // Fake activation (any key works)
   activateLicense: async (key: string) => {
     set({ isLoading: true })
 
@@ -55,15 +55,16 @@ interface CompanyState {
   companies: Company[]
   activeCompany: Company | null
   isLoading: boolean
+  hasCompany: boolean
   setActiveCompany: (company: Company) => void
   loadCompanies: () => Promise<void>
-  hasCompany: boolean
+  createCompany: (company: Company) => Promise<{ success: boolean }>
 }
 
 export const useCompanyStore = create<CompanyState>((set) => ({
   companies: [],
   activeCompany: null,
-  isLoading: true,
+  isLoading: false,
   hasCompany: false,
 
   setActiveCompany: (company) => set({ activeCompany: company }),
@@ -72,6 +73,7 @@ export const useCompanyStore = create<CompanyState>((set) => ({
     set({ isLoading: true })
     try {
       const result = await window.electronAPI.company.getAll()
+
       if (result.success && result.data) {
         const companies = result.data as Company[]
         const defaultCompany =
@@ -91,13 +93,39 @@ export const useCompanyStore = create<CompanyState>((set) => ({
           isLoading: false
         })
       }
-    } catch {
+    } catch (error) {
+      console.error("Load companies error:", error)
       set({
         companies: [],
         activeCompany: null,
         hasCompany: false,
         isLoading: false
       })
+    }
+  },
+
+  // 🔥 FIXED COMPANY CREATE
+  createCompany: async (company: Company) => {
+    try {
+      console.log("Sending company:", company)
+
+      const result = await window.electronAPI.company.create(company)
+
+      console.log("Received response:", result)
+
+      if (result.success && result.data) {
+        set({
+          companies: [result.data],
+          activeCompany: result.data,
+          hasCompany: true
+        })
+        return { success: true }
+      }
+
+      return { success: false }
+    } catch (error) {
+      console.error("Create company failed:", error)
+      return { success: false }
     }
   }
 }))
