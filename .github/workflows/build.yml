@@ -27,7 +27,7 @@ jobs:
 
       # 🔥 VERY IMPORTANT
       - name: Rebuild Native Modules
-        run: npx electron-rebuild
+        run: npx @electron/rebuild -f -w better-sqlite3
 
       - name: Build App
         run: npm run build
