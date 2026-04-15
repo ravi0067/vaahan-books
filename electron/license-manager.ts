@@ -1,7 +1,9 @@
-import Store from 'electron-store'
 import crypto from 'node:crypto'
 import os from 'node:os'
 import { networkInterfaces } from 'node:os'
+import path from 'node:path'
+import fs from 'node:fs'
+import { app } from 'electron'
 
 // ── Types ──────────────────────────────────────────────────
 export interface LicenseInfo {
@@ -17,10 +19,50 @@ export interface LicenseInfo {
   daysRemaining: number
 }
 
-const store = new Store({
-  name: 'vaahan-books-license',
-  encryptionKey: 'VB-SecureStore-2026',
-})
+// Simple JSON file store (replaces electron-store to avoid ESM/CJS conflict)
+class SimpleStore {
+  private filePath: string
+  private data: Record<string, any>
+
+  constructor(name: string) {
+    const userDataPath = app.getPath('userData')
+    this.filePath = path.join(userDataPath, `${name}.json`)
+    this.data = {}
+    this.load()
+  }
+
+  private load() {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        const raw = fs.readFileSync(this.filePath, 'utf-8')
+        this.data = JSON.parse(raw)
+      }
+    } catch {
+      this.data = {}
+    }
+  }
+
+  private save() {
+    try {
+      const dir = path.dirname(this.filePath)
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+      fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8')
+    } catch (err) {
+      console.error('[Store] Failed to save:', err)
+    }
+  }
+
+  get(key: string): any {
+    return this.data[key]
+  }
+
+  set(key: string, value: any) {
+    this.data[key] = value
+    this.save()
+  }
+}
+
+const store = new SimpleStore('vaahan-books-license')
 
 export class LicenseManager {
   private machineId: string

@@ -53,19 +53,37 @@ function createWindow() {
     mainWindow.loadURL(VITE_DEV_SERVER_URL)
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
-    const indexPath = path.join(__dirname, '../dist/index.html')
+    // Try multiple possible paths (packaged vs development build)
+    const possiblePaths = [
+      path.join(__dirname, '../dist/index.html'),           // dev build
+      path.join(app.getAppPath(), 'dist/index.html'),       // packaged (asar)
+      path.join(__dirname, 'index.html'),                   // fallback
+    ]
 
-    if (!fs.existsSync(indexPath)) {
-      console.error('❌ index.html not found:', indexPath)
-      // Fallback for some build structures
-      const fallbackPath = path.join(__dirname, 'index.html')
-      if (fs.existsSync(fallbackPath)) {
-        mainWindow.loadFile(fallbackPath)
+    let loaded = false
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        console.log(`[Main] Loading: ${p}`)
+        mainWindow.loadFile(p)
+        loaded = true
+        break
       }
-    } else {
-      mainWindow.loadFile(indexPath)
+    }
+
+    if (!loaded) {
+      console.error('❌ index.html not found in any expected location:', possiblePaths)
+      mainWindow.loadURL(`data:text/html,<h2>Error: index.html not found. Please reinstall VaahanBooks.</h2>`)
     }
   }
+
+  // Log renderer errors for debugging
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error(`❌ Page failed to load: ${errorCode} - ${errorDescription}`)
+  })
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('❌ Render process gone:', details.reason)
+  })
 
   // Open external links in browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
