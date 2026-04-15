@@ -1,22 +1,39 @@
 import { create } from 'zustand'
 
-// 🔥 TEMP: remove strict types
-type LicenseInfo = any
-type Company = any
+// 🔥 SAFE TYPES (no strict error)
+type LicenseState = {
+  license: any
+  isLoading: boolean
+  isActivated: boolean
+  setLicense: (license: any) => void
+  setLoading: (loading: boolean) => void
+  checkLicense: () => Promise<void>
+  activateLicense: (key: string) => Promise<any>
+}
 
-// ── License Store ─────────────────────────────────────────
-export const useLicenseStore = create((set) => ({
+type CompanyState = {
+  companies: any[]
+  activeCompany: any
+  isLoading: boolean
+  hasCompany: boolean
+  setActiveCompany: (company: any) => void
+  loadCompanies: () => Promise<void>
+  createCompany: (company: any) => Promise<any>
+}
+
+// ── License Store ──
+export const useLicenseStore = create<LicenseState>((set) => ({
   license: null,
   isLoading: false,
   isActivated: false,
 
-  setLicense: (license: any) =>
+  setLicense: (license) =>
     set({
       license,
       isActivated: license?.status === 'ACTIVE'
     }),
 
-  setLoading: (isLoading: boolean) => set({ isLoading }),
+  setLoading: (isLoading) => set({ isLoading }),
 
   checkLicense: async () => {
     set({ isLoading: false })
@@ -42,14 +59,14 @@ export const useLicenseStore = create((set) => ({
   }
 }))
 
-// ── Company Store ─────────────────────────────────────────
-export const useCompanyStore = create((set) => ({
+// ── Company Store ──
+export const useCompanyStore = create<CompanyState>((set) => ({
   companies: [],
   activeCompany: null,
   isLoading: false,
   hasCompany: false,
 
-  setActiveCompany: (company: any) =>
+  setActiveCompany: (company) =>
     set({
       activeCompany: company
     }),
@@ -83,8 +100,7 @@ export const useCompanyStore = create((set) => ({
         })
       }
     } catch (error) {
-      console.error('Load companies error:', error)
-
+      console.error(error)
       set({
         companies: [],
         activeCompany: null,
@@ -110,7 +126,7 @@ export const useCompanyStore = create((set) => ({
 
       return { success: false }
     } catch (error) {
-      console.error('Create company failed:', error)
+      console.error(error)
       return { success: false }
     }
   }
