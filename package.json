@@ -1,1 +1,26 @@
-{"name": "vaahan-books", "version": "1.0.0", "main": "index.js", "type": "module", "scripts": {}, "dependencies": {}}
+{
+  "name": "vaahan-books",
+  "version": "1.0.0",
+  "description": "AI-Powered Desktop Billing & Accounting Software",
+  "main": "dist-electron/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "electron-store": "^8.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite-plugin-electron": "^0.29.1"
+  }
+}
