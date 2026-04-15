@@ -23,21 +23,17 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: |
-          npm install --ignore-scripts
-          npm rebuild esbuild
+        run: npm ci
 
-      - name: Build React and Electron TS
-        run: npx tsc && npx vite build
+      # 🔥 VERY IMPORTANT
+      - name: Rebuild Native Modules
+        run: npx electron-rebuild
 
-      - name: Build Electron (.exe)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win --publish never
+      - name: Build App
+        run: npm run build
 
-      - name: Force Upload to GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd release
-          gh release upload v1.0.0 "VaahanBooks Setup 1.0.0.exe" --clobber
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: VaahanBooks-Setup
+          path: release/*.exe
