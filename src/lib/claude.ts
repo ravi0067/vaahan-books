@@ -10,7 +10,6 @@ export class AICore {
 
   private static anthropic = new Anthropic({
     apiKey: this.API_KEY,
-    dangerouslyAllowBrowser: true, // Required for Electron Renderer process if not routed via IPC
   });
 
   // Simple hardcoded cache for cost reduction strategy
