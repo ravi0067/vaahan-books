@@ -4,11 +4,20 @@
   "description": "AI-Powered Desktop Billing & Accounting Software",
   "main": "dist-electron/main.js",
   "type": "commonjs",
+
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "preview": "vite preview"
   },
+
+  "build": {
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ]
+  },
+
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,6 +28,7 @@
     "decimal.js": "^10.4.3",
     "@anthropic-ai/sdk": "^0.24.3"
   },
+
   "devDependencies": {
     "electron": "^34.3.0",
     "electron-builder": "^25.1.8",
