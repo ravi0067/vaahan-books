@@ -180,27 +180,57 @@ function registerIpcHandlers() {
 
   // ── Company Management ──
   ipcMain.handle('company:create', async (_event, data: any) => {
-    const db = getDatabase()
-    try {
-      const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-      const stmt = db.prepare(`
-        INSERT INTO Company (id, name, tradeName, gstin, panNumber, tanNumber,
-          address, city, state, stateCode, pincode, phone, email, website,
-          financialYearStart, bookStartDate, isDefault, isActive, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
-      `)
-      stmt.run(
-        id, data.name, data.tradeName || '', data.gstin || '', data.panNumber || '',
-        data.tanNumber || '', data.address || '', data.city || '', data.state || '',
-        data.stateCode || '', data.pincode || '', data.phone || '', data.email || '',
-        data.website || '', data.financialYearStart || 4, data.bookStartDate || new Date().toISOString().split('T')[0],
-        data.isDefault ? 1 : 0
-      )
-      return { success: true, data: { id } }
-    } catch (error: any) {
-      return { success: false, error: error.message }
+  const db = getDatabase()
+
+  try {
+    // ✅ SAFETY (VERY IMPORTANT)
+    if (!data) {
+      return { success: false, error: 'No data received' }
     }
-  })
+
+    const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+    const stmt = db.prepare(`
+      INSERT INTO Company (id, name, tradeName, gstin, panNumber, tanNumber,
+        address, city, state, stateCode, pincode, phone, email, website,
+        financialYearStart, bookStartDate, isDefault, isActive, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+    `)
+
+    stmt.run(
+      id,
+      data.name,
+      data.tradeName || '',
+      data.gstin || '',
+      data.panNumber || '',
+      data.tanNumber || '',
+      data.address || '',
+      data.city || '',
+      data.state || '',
+      data.stateCode || '',
+      data.pincode || '',
+      data.phone || '',
+      data.email || '',
+      data.website || '',
+      data.financialYearStart || 4,
+      data.bookStartDate || new Date().toISOString().split('T')[0],
+      data.isDefault ? 1 : 0
+    )
+
+    return {
+      success: true,
+      data: {
+        id,
+        ...data,
+        isDefault: data.isDefault ? 1 : 0,
+        isActive: 1
+      }
+    }
+
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+})
 
   ipcMain.handle('company:getAll', async () => {
     const db = getDatabase()
