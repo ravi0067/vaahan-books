@@ -14,25 +14,19 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # ✅ FIXED
       - name: Install Dependencies
         run: npm install
 
-      # ✅ FIXED
-      - name: Rebuild Native Modules
-        run: npx @electron/rebuild -v 34.3.0 -f -w better-sqlite3
+      - name: Install Native Deps (IMPORTANT)
+        run: npx electron-builder install-app-deps
 
       - name: Build App
         run: npm run build
-
-      - name: Upload EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: VaahanBooks-Setup
-          path: release/*.exe
