@@ -38,7 +38,7 @@ export const useLicenseStore = create<LicenseState>((set) => ({
     const fakeLicense = {
       key,
       status: 'ACTIVE'
-    } as LicenseInfo
+    } as unknown as LicenseInfo
 
     set({
       license: fakeLicense,
