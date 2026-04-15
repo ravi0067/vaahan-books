@@ -25,10 +25,17 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Install Native Deps (IMPORTANT)
+      - name: Install Native Deps
         run: npx electron-builder install-app-deps
 
       - name: Build App
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run build
+
+      # 🔥 IMPORTANT — THIS WAS MISSING / WRONG
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: VaahanBooks-Setup
+          path: dist/*.exe
