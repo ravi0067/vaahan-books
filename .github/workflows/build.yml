@@ -14,20 +14,19 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # ✅ FIXED
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
-      # 🔥 VERY IMPORTANT
+      # ✅ FIXED
       - name: Rebuild Native Modules
-        run: npx @electron/rebuild -f -w better-sqlite3
+        run: npx @electron/rebuild -v 34.3.0 -f -w better-sqlite3
 
       - name: Build App
         run: npm run build
