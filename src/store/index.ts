@@ -14,7 +14,7 @@ interface LicenseState {
 
 export const useLicenseStore = create<LicenseState>((set) => ({
   license: null,
-  isLoading: true,
+  isLoading: false, // 👈 important (start me loading false)
   isActivated: false,
 
   setLicense: (license) => set({
@@ -24,27 +24,29 @@ export const useLicenseStore = create<LicenseState>((set) => ({
 
   setLoading: (isLoading) => set({ isLoading }),
 
+  // 🔥 FULLY DISABLED (no backend call)
   checkLicense: async () => {
-    set({ isLoading: true })
-    try {
-      const status = await window.electronAPI.license.getStatus()
-      set({
-        license: status,
-        isActivated: status?.status === 'ACTIVE',
-        isLoading: false
-      })
-    } catch {
-      set({ license: null, isActivated: false, isLoading: false })
-    }
+    set({ isLoading: false })
   },
 
+  // 🔥 FAKE ACTIVATION (any key works)
   activateLicense: async (key: string) => {
-    const result = await window.electronAPI.license.activate(key)
-    if (result.success && result.data) {
-      set({ license: result.data, isActivated: true })
-      return { success: true }
-    }
-    return { success: false, error: result.error }
+    set({ isLoading: true })
+
+    await new Promise(res => setTimeout(res, 800))
+
+    const fakeLicense = {
+      key,
+      status: 'ACTIVE'
+    } as LicenseInfo
+
+    set({
+      license: fakeLicense,
+      isActivated: true,
+      isLoading: false
+    })
+
+    return { success: true }
   }
 }))
 
@@ -72,7 +74,9 @@ export const useCompanyStore = create<CompanyState>((set) => ({
       const result = await window.electronAPI.company.getAll()
       if (result.success && result.data) {
         const companies = result.data as Company[]
-        const defaultCompany = companies.find(c => c.isDefault) || companies[0] || null
+        const defaultCompany =
+          companies.find(c => c.isDefault) || companies[0] || null
+
         set({
           companies,
           activeCompany: defaultCompany,
@@ -80,10 +84,20 @@ export const useCompanyStore = create<CompanyState>((set) => ({
           isLoading: false
         })
       } else {
-        set({ companies: [], activeCompany: null, hasCompany: false, isLoading: false })
+        set({
+          companies: [],
+          activeCompany: null,
+          hasCompany: false,
+          isLoading: false
+        })
       }
     } catch {
-      set({ companies: [], activeCompany: null, hasCompany: false, isLoading: false })
+      set({
+        companies: [],
+        activeCompany: null,
+        hasCompany: false,
+        isLoading: false
+      })
     }
   }
 }))
