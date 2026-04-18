@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'node:path'
-import { initDatabase, getDatabase } from './database/sqlite'
+import { initDatabase, getDatabase, seedChartOfAccounts } from './database/sqlite'
 import { LicenseManager } from './license-manager'
 import { BackupManager } from './backup-manager'
 
@@ -18,7 +18,7 @@ const isDev = !!VITE_DEV_SERVER_URL
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js').replace('app.asar', 'app.asar.unpacked')
-  
+
   // FIX 2: Preload existence check
   if (!fs.existsSync(preloadPath)) {
     console.error('❌ Preload file not found:', preloadPath)
@@ -180,57 +180,70 @@ function registerIpcHandlers() {
 
   // ── Company Management ──
   ipcMain.handle('company:create', async (_event, data: any) => {
-  const db = getDatabase()
+    const db = getDatabase()
 
-  try {
-    // ✅ SAFETY (VERY IMPORTANT)
-    if (!data) {
-      return { success: false, error: 'No data received' }
-    }
-
-    const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-
-    const stmt = db.prepare(`
-      INSERT INTO Company (id, name, tradeName, gstin, panNumber, tanNumber,
-        address, city, state, stateCode, pincode, phone, email, website,
-        financialYearStart, bookStartDate, isDefault, isActive, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
-    `)
-
-    stmt.run(
-      id,
-      data.name,
-      data.tradeName || '',
-      data.gstin || '',
-      data.panNumber || '',
-      data.tanNumber || '',
-      data.address || '',
-      data.city || '',
-      data.state || '',
-      data.stateCode || '',
-      data.pincode || '',
-      data.phone || '',
-      data.email || '',
-      data.website || '',
-      data.financialYearStart || 4,
-      data.bookStartDate || new Date().toISOString().split('T')[0],
-      data.isDefault ? 1 : 0
-    )
-
-    return {
-      success: true,
-      data: {
-        id,
-        ...data,
-        isDefault: data.isDefault ? 1 : 0,
-        isActive: 1
+    try {
+      // ✅ SAFETY (VERY IMPORTANT)
+      if (!data) {
+        return { success: false, error: 'No data received' }
       }
-    }
 
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-})
+      const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+      const stmt = db.prepare(`
+        INSERT INTO Company (id, name, tradeName, gstin, panNumber, tanNumber,
+          address, city, state, stateCode, pincode, phone, email, website,
+          financialYearStart, bookStartDate, isDefault, isActive, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+      `)
+
+      stmt.run(
+        id,
+        data.name,
+        data.tradeName || '',
+        data.gstin || '',
+        data.panNumber || '',
+        data.tanNumber || '',
+        data.address || '',
+        data.city || '',
+        data.state || '',
+        data.stateCode || '',
+        data.pincode || '',
+        data.phone || '',
+        data.email || '',
+        data.website || '',
+        data.financialYearStart || 4,
+        data.bookStartDate || new Date().toISOString().split('T')[0],
+        data.isDefault ? 1 : 0
+      )
+
+      // ✅ FIX: Seed chart of accounts immediately after company creation
+      seedChartOfAccounts(id)
+
+      return {
+        success: true,
+        data: {
+          id,
+          ...data,
+          isDefault: data.isDefault ? 1 : 0,
+          isActive: 1
+        }
+      }
+
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  // ✅ NEW: Dedicated handler for seeding accounts separately
+  ipcMain.handle('company:seedAccounts', async (_event, companyId: string) => {
+    try {
+      seedChartOfAccounts(companyId)
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
 
   ipcMain.handle('company:getAll', async () => {
     const db = getDatabase()
@@ -257,7 +270,7 @@ function registerIpcHandlers() {
     return await backupManager.createBackup()
   })
 
-  ipcMain.handle('backup:getHistory', async () => {
+ ipcMain.handle('backup:getHistory', async () => {
     return backupManager.getBackupHistory()
   })
 
