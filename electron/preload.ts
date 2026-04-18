@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     create: (data: any) => ipcRenderer.invoke('company:create', data),
     getAll: () => ipcRenderer.invoke('company:getAll'),
     getDefault: () => ipcRenderer.invoke('company:getDefault'),
+    seedAccounts: (companyId: string) => ipcRenderer.invoke('company:seedAccounts', companyId),
   },
 
   // Backup
