@@ -224,10 +224,84 @@ export default function SetupWizard() {
         {/* Mobile step indicator */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-surface-800">
           <span className="text-sm text-surface-400">Step {step}: {STEPS[step-1].title}</span>
-          <span className="text-xs text-bran
-          <div className="card !bg-brand-500/5 !border-brand-500/15">
+         <span className="text-xs text-brand-400">{step}/6</span>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+          <div className="w-full max-w-lg space-y-6 animate-fade-in" key={step}>
+            {/* Step 1: Company Name */}
+            {step === 1 && (
+              <>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2">What's your company name?</h2>
+                  <p className="text-surface-400 text-sm">This will appear on all your invoices and reports.</p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-surface-300 mb-1.5">Company Name *</label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => updateForm('name', e.target.value)}
+                      placeholder="e.g., Sharma Motors Pvt Ltd"
+                      className="w-full px-4 py-3 rounded-xl bg-surface-900 border border-surface-700 text-white placeholder:text-surface-600 input-focus"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-surface-300 mb-1.5">Trade Name (optional)</label>
+                    <input
+                      type="text"
+                      value={form.tradeName}
+                      onChange={(e) => updateForm('tradeName', e.target.value)}
+                      placeholder="e.g., Sharma Honda"
+                      className="w-full px-4 py-3 rounded-xl bg-surface-900 border border-surface-700 text-white placeholder:text-surface-600 input-focus"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: GSTIN / PAN — Auto-fill PAN & State from GSTIN */}
+            {step === 2 && (
+              <>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2">GST & PAN Details</h2>
+                  <p className="text-surface-400 text-sm">Enter GSTIN to auto-fill PAN and State. Optional for now.</p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-surface-300 mb-1.5">GSTIN (15-digit)</label>
+                    <input
+                      type="text"
+                      value={form.gstin}
+                      onChange={(e) => handleGstinChange(e.target.value)}
+                      placeholder="e.g., 27AABCU9603R1ZM"
+                      maxLength={15}
+                      className="w-full px-4 py-3 rounded-xl bg-surface-900 border border-surface-700 text-white font-mono placeholder:text-surface-600 input-focus"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-surface-300 mb-1.5">
+                      PAN Number
+                      {form.gstin.length >= 12 && (
+                        <span className="text-green-400 text-xs ml-2">Auto-filled from GSTIN</span>
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      value={form.panNumber}
+                      onChange={(e) => updateForm('panNumber', e.target.value.toUpperCase())}
+                      placeholder="e.g., AABCU9603R"
+                      maxLength={10}
+                      className="w-full px-4 py-3 rounded-xl bg-surface-900 border border-surface-700 text-white font-mono placeholder:text-surface-600 input-focus"
+                    />
+                  </div>
+                  {form.state && form.gstin.length >= 2 && (
+                    <div className="card !bg-brand-500/5 !border-brand-500/15">
                       <p className="text-sm text-brand-400 flex items-center gap-2">
-                        <span>📍</span> State auto-detected: <strong>{form.stateCode} - {form.state}</strong>
+                        State auto-detected: {form.stateCode} - {form.state}
                       </p>
                     </div>
                   )}
