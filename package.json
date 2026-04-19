@@ -1,46 +1,79 @@
 {
   "name": "vaahan-books",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-Powered Desktop Billing & Accounting Software",
   "main": "dist-electron/main.js",
+  "author": "Ravi Accounting Services <support@vaahanerp.com>",
+  "license": "UNLICENSED",
   "type": "commonjs",
-
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "preview": "vite preview"
   },
-
   "build": {
+    "appId": "com.vaahanerp.books",
+    "productName": "VaahanBooks",
+    "copyright": "Copyright © 2026 Ravi Accounting Services",
+    "artifactName": "VaahanBooks-Setup-${version}.${ext}",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
-    ]
+      "dist-electron/**/*",
+      "!node_modules/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/icon.png",
+      "publisherName": "Ravi Accounting Services"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VaahanBooks"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "ravi0067",
+      "repo": "vaahan-books"
+    }
   },
-
   "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "decimal.js": "^10.4.3",
+    "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^5.0.0",
-    "better-sqlite3": "^11.7.0",
-    "electron-store": "^8.1.0",
-    "lucide-react": "^0.469.0",
-    "decimal.js": "^10.4.3",
-    "@anthropic-ai/sdk": "^0.24.3"
+    "zustand": "^5.0.0"
   },
-
   "devDependencies": {
-    "electron": "^34.3.0",
-    "electron-builder": "^25.1.8",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.2",
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite-plugin-electron": "^0.29.1",
+    "@types/better-sqlite3": "^7.6.9",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@types/better-sqlite3": "^7.6.9",
-    "tailwindcss": "^3.4.17",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.21",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
     "postcss": "^8.5.3",
-    "autoprefixer": "^10.4.21"
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2",
+    "vite-plugin-electron": "^0.29.1",
+    "vite-plugin-electron-renderer": "^0.14.6"
   }
 }

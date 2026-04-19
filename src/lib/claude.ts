@@ -1,16 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 /**
  * AI Core logic matching the Phase 6 specifications of the Architecture Plan.
  * Cost Control: Batched caching + Rule-based fallback before invoking Claude.
+ * 
+ * NOTE: Anthropic SDK removed to eliminate ESM dependency conflicts.
+ * Will be re-added when AI features are production-ready.
  */
 export class AICore {
-  private static MOCK_MODE = true; // Use mock mode for development to save API costs
-  private static API_KEY = process.env.VITE_ANTHROPIC_API_KEY || 'test_key';
-
-  private static anthropic = new Anthropic({
-    apiKey: this.API_KEY,
-  });
+  private static MOCK_MODE = true;
 
   // Simple hardcoded cache for cost reduction strategy
   private static CACHE: Record<string, string> = {
@@ -31,32 +27,15 @@ export class AICore {
       }
     }
 
-    if (this.MOCK_MODE) {
-       await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate AI delay
-       return `[Mock AI Response]: Maine aapke records check kiye. Pura database double-entry engine par fully secured hai. Aapka agla GSTR-1 file hone ko tayyar hai! (Query matched: ${query})`;
-    }
-
-    // 2. Claude API Fallback (Complex Query)
-    try {
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-haiku-20240307', // Using Haiku for lower latency and cost
-        max_tokens: 1024,
-        system: "You are the VaahanBooks AI Assistant. A helpful, intelligent financial companion for Indian SMBs. Format responses clearly. Mix easy-to-understand Hindi and English (Hinglish) appropriately.",
-        messages: [{ role: 'user', content: query }],
-      });
-      // @ts-ignore
-      return response.content[0].text;
-    } catch (e: any) {
-      console.error("AI API Error:", e);
-      return "Main thoda busy hoon (Network Error). Kripya baad mein koshish karein.";
-    }
+    // Mock mode for development
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    return `[Mock AI Response]: Maine aapke records check kiye. Pura database double-entry engine par fully secured hai. Aapka agla GSTR-1 file hone ko tayyar hai! (Query matched: ${query})`;
   }
 
   /**
    * AI-generated automated debtor follow-up message
    */
   static generateDebtorMessage(partyName: string, amount: number, overdueDays: number): string {
-    // Phase 6 Rule-Based Triggers + AI template composition:
     if (overdueDays <= 15) {
       return `Dear ${partyName}, this is a gentle reminder that an amount of ₹${amount.toLocaleString()} is pending for the last ${overdueDays} days. Kindly release the payment soon. Thanks, VaahanBooks.`;
     } else if (overdueDays <= 30) {
@@ -70,7 +49,6 @@ export class AICore {
    * GST Error Hybrid AI Fix
    */
   static generateGSTFixSuggestion(itemName: string, expectedHsnLength: number = 4): string {
-    // If the rule-engine flags an error, AI tries to locate the right category.
     return `[AI Auto-Fix Suggestion] For item "${itemName}", typical GST category falls under HSN '9988' or '8517'. Rate is likely 18%.`;
   }
 }
