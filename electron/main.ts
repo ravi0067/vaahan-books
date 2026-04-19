@@ -17,7 +17,7 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
 const isDev = !!VITE_DEV_SERVER_URL
 
 function createWindow() {
-  const preloadPath = path.join(__dirname, 'preload.js').replace('app.asar', 'app.asar.unpacked')
+  const preloadPath = path.join(__dirname, 'preload.js')
 
   // FIX 2: Preload existence check
   if (!fs.existsSync(preloadPath)) {
