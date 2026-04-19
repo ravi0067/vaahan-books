@@ -25,15 +25,42 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build App
+      - name: Build React and Electron TS
+        run: npx tsc && npx vite build
+
+      - name: Build Installer with Electron Builder
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build
+        run: npx electron-builder --win --x64
 
-      - name: Upload EXE
+      - name: Upload Setup EXE as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: VaahanBooks-Setup
-          # Yaha maine path change kiya hai taaki files mil sakein
-          path: dist/*.exe
+          path: release/*.exe
           if-no-files-found: warn
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: v${{ github.run_number }}
+          name: VaahanBooks v1.0.1 (Build ${{ github.run_number }})
+          body: |
+            ## VaahanBooks v1.0.1
+            
+            **Powered by Ravi Accounting Services**
+            
+            ### Changes
+            - Fixed ESM crash error on startup
+            - Removed conflicting dependencies
+            - Professional installer with branding
+            
+            ### Download
+            Download `VaahanBooks-Setup-1.0.1.exe` below and install.
+          files: |
+            release/VaahanBooks-Setup-*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
