@@ -22,8 +22,7 @@
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*",
-      "!node_modules/**/*"
+      "dist-electron/**/*"
     ],
     "asar": true,
     "asarUnpack": [
