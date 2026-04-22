@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLicenseStore, useCompanyStore } from './store'
 import ActivationPage from './pages/ActivationPage'
 import SetupWizard from './pages/SetupWizard'
-import DashboardLayout from './components/layout/DashboardLayout'
+import TallyLayout from './components/layout/TallyLayout'
 import SplashScreen from './components/SplashScreen'
 
 export default function App() {
@@ -35,6 +35,6 @@ export default function App() {
     return <SetupWizard />
   }
 
-  // Step 3: Main dashboard
-  return <DashboardLayout />
+  // Step 3: Tally-style Gateway Dashboard
+  return <TallyLayout />
 }

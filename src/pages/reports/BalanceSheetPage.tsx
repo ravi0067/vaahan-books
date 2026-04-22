@@ -1,113 +1,206 @@
-import React from 'react';
-import { Download, PieChart, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react'
+import { useCompanyStore } from '../../store'
+import { useNavigationStore } from '../../hooks/useNavigationStore'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { getLedgers, getAccountGroups } from '../../lib/db'
+
+interface Ledger {
+  id: string; name: string; accountGroupId: string; groupName: string
+  nature: string; currentBalance: number; balanceType: string; openingBalance: number
+}
+interface Group {
+  id: string; name: string; nature: string; parentId: string | null
+}
 
 export default function BalanceSheetPage() {
-  const assets = [
-    { name: 'Fixed Assets', amount: 450000 },
-    { name: 'Current Assets', amount: 0 },
-    { name: '  - Cash in Hand', amount: 35000 },
-    { name: '  - Bank Accounts', amount: 125000 },
-    { name: '  - Sundry Debtors', amount: 310000 },
-    { name: '  - Closing Stock', amount: 280000 },
-  ];
+  const { activeCompany } = useCompanyStore()
+  const { setShowPeriodSelector, periodFrom, periodTo } = useNavigationStore()
 
-  const liabilities = [
-    { name: 'Capital Account', amount: 800000 },
-    { name: 'Loans (Liability)', amount: 150000 },
-    { name: 'Current Liabilities', amount: 0 },
-    { name: '  - Sundry Creditors', amount: 180000 },
-    { name: '  - Duties & Taxes (GST)', amount: 25000 },
-    { name: 'Profit & Loss A/C', amount: 45000 },
-  ];
+  const [groups, setGroups] = useState<Group[]>([])
+  const [ledgers, setLedgers] = useState<Ledger[]>([])
+  const [loading, setLoading] = useState(true)
+  const [detailed, setDetailed] = useState(false)
 
-  const totalAssets = 450000 + 35000 + 125000 + 310000 + 280000;
-  const totalLiabilities = 800000 + 150000 + 180000 + 25000 + 45000;
+  const load = useCallback(async () => {
+    if (!activeCompany?.id) return
+    setLoading(true)
+    const [g, l] = await Promise.all([
+      getAccountGroups(activeCompany.id),
+      getLedgers(activeCompany.id),
+    ])
+    setGroups(g)
+    setLedgers(l)
+    setLoading(false)
+  }, [activeCompany?.id])
+
+  useEffect(() => { load() }, [load])
+
+  useKeyboardShortcuts([
+    { key: 'F2', handler: () => setShowPeriodSelector(true) },
+    { key: 'F5', handler: () => setDetailed(d => !d) },
+  ])
+
+  // Calculate totals by nature
+  const sum = (nature: string, balType: 'DEBIT' | 'CREDIT') =>
+    ledgers
+      .filter(l => l.nature === nature && l.balanceType === balType)
+      .reduce((s, l) => s + Math.abs(l.currentBalance), 0)
+
+  const assets    = sum('ASSETS', 'DEBIT')
+  const liab      = sum('LIABILITIES', 'CREDIT')
+  const income    = sum('INCOME', 'CREDIT')
+  const expenses  = sum('EXPENSE', 'DEBIT')
+  const profit    = income - expenses
+
+  // Total both sides of Balance Sheet
+  const totalLiab = liab + (profit > 0 ? profit : 0)
+  const totalAssets = assets + (profit < 0 ? Math.abs(profit) : 0)
+
+  const formatDate = (d: string) => {
+    try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }
+    catch { return d }
+  }
+
+  const fmt = (n: number) => `₹${Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+
+  // Group ledgers by account group
+  const ledgersByGroup = (groupId: string) => ledgers.filter(l => l.accountGroupId === groupId)
+
+  // Render a nature section
+  const renderSection = (nature: 'ASSETS' | 'LIABILITIES' | 'INCOME' | 'EXPENSE') => {
+    const topGroups = groups.filter(g => g.nature === nature && !g.parentId)
+    const subGroups = (parentId: string) => groups.filter(g => g.parentId === parentId)
+
+    return topGroups.map(pg => {
+      const subs = subGroups(pg.id)
+      const pgTotal = [...subs.map(sg => ledgersByGroup(sg.id)), ledgersByGroup(pg.id)]
+        .flat().reduce((s, l) => s + Math.abs(l.currentBalance), 0)
+
+      return (
+        <div key={pg.id} className="bs-group">
+          <div className="bs-group-header">
+            <span>{pg.name}</span>
+            <span className="font-mono text-sm font-semibold text-white">{fmt(pgTotal)}</span>
+          </div>
+          {detailed && (
+            <>
+              {subs.map(sg => (
+                <div key={sg.id}>
+                  <div className="bs-subgroup-header">
+                    <span>{sg.name}</span>
+                  </div>
+                  {ledgersByGroup(sg.id).map(l => (
+                    <div key={l.id} className="bs-ledger-row">
+                      <span>{l.name}</span>
+                      <span className={`font-mono text-xs ${l.balanceType === 'DEBIT' ? 'text-green-400' : 'text-red-400'}`}>
+                        {fmt(l.currentBalance)} {l.balanceType === 'DEBIT' ? 'Dr' : 'Cr'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              {ledgersByGroup(pg.id).map(l => (
+                <div key={l.id} className="bs-ledger-row">
+                  <span>{l.name}</span>
+                  <span className={`font-mono text-xs ${l.balanceType === 'DEBIT' ? 'text-green-400' : 'text-red-400'}`}>
+                    {fmt(l.currentBalance)} {l.balanceType === 'DEBIT' ? 'Dr' : 'Cr'}
+                  </span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )
+    })
+  }
+
+  if (loading) {
+    return <div className="h-full flex items-center justify-center text-surface-400">Loading Balance Sheet...</div>
+  }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-fade-in p-6">
-      
-      {/* Header */}
-      <div className="flex justify-between items-center bg-surface-900 border border-surface-800 p-6 rounded-2xl shadow-xl backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-brand-500/10 rounded-xl border border-brand-500/20">
-            <PieChart className="text-brand-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold font-display text-white">Balance Sheet</h1>
-            <p className="text-surface-400 mt-1 text-sm">As on {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          </div>
+    <div className="report-page">
+      <div className="report-header">
+        <div>
+          <h1 className="tally-form-title">Balance Sheet</h1>
+          <p className="text-surface-500 text-xs">
+            {activeCompany?.name} &nbsp;·&nbsp; As on {formatDate(periodTo)}
+            <button onClick={() => setShowPeriodSelector(true)} className="text-brand-400 ml-2 text-[10px]">[F2]</button>
+          </p>
         </div>
-        <button className="flex items-center gap-2 bg-surface-800 hover:bg-surface-700 text-white px-6 py-3 rounded-xl shadow-lg font-medium transition-all border border-surface-700">
-          <Download size={18} /> Export PDF
-        </button>
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => setDetailed(d => !d)}
+            className={`tally-btn-cancel text-xs ${detailed ? 'border-brand-500 text-brand-400' : ''}`}
+          >
+            {detailed ? 'Condensed' : 'Detailed'} <span className="opacity-60 text-[10px]">F5</span>
+          </button>
+        </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 gap-6">
-        
-        {/* Liabilities Side (Left) */}
-        <div className="bg-surface-900 rounded-2xl shadow-lg border border-surface-800 overflow-hidden ring-1 ring-white/5 flex flex-col">
-          <div className="p-4 border-b border-surface-800 bg-surface-950/50 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <TrendingDown className="text-red-400" size={18} /> Liabilities
-            </h2>
+      {/* T-Format Balance Sheet */}
+      <div className="bs-grid">
+        {/* LIABILITIES */}
+        <div className="bs-side">
+          <div className="bs-side-header bs-liabilities-header">
+            <span>LIABILITIES</span>
+            <span className="font-mono">{fmt(totalLiab)}</span>
           </div>
-          <div className="flex-1 p-2">
-            <table className="w-full text-left">
-              <tbody>
-                {liabilities.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-surface-800/20 transition-colors">
-                    <td className={`p-3 text-sm ${item.name.startsWith('  -') ? 'pl-8 text-surface-400' : 'text-surface-200 font-medium'}`}>
-                      {item.name}
-                    </td>
-                    <td className="p-3 text-right text-sm text-white font-mono">
-                      {item.amount > 0 ? `₹ ${item.amount.toLocaleString('en-IN')}` : ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-4 border-t border-surface-800 bg-surface-950 flex justify-between items-center text-red-50">
-             <span className="font-bold text-lg">Total</span>
-             <span className="font-bold text-xl font-mono border-double border-b-4 border-surface-600 pb-1">
-               ₹ {totalLiabilities.toLocaleString('en-IN')}
-             </span>
+
+          {renderSection('LIABILITIES')}
+
+          {/* Profit/Loss */}
+          {profit !== 0 && (
+            <div className="bs-group">
+              <div className="bs-group-header">
+                <span>{profit >= 0 ? 'Net Profit' : 'Net Loss'}</span>
+                <span className={`font-mono text-sm font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {fmt(profit)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="bs-total-row">
+            <span>Total</span>
+            <span className="font-mono font-bold text-white">{fmt(totalLiab)}</span>
           </div>
         </div>
 
-        {/* Assets Side (Right) */}
-        <div className="bg-surface-900 rounded-2xl shadow-lg border border-surface-800 overflow-hidden ring-1 ring-white/5 flex flex-col">
-          <div className="p-4 border-b border-surface-800 bg-surface-950/50 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <TrendingUp className="text-green-400" size={18} /> Assets
-            </h2>
+        {/* ASSETS */}
+        <div className="bs-side bs-assets-side">
+          <div className="bs-side-header bs-assets-header">
+            <span>ASSETS</span>
+            <span className="font-mono">{fmt(totalAssets)}</span>
           </div>
-          <div className="flex-1 p-2">
-            <table className="w-full text-left">
-              <tbody>
-                {assets.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-surface-800/20 transition-colors">
-                    <td className={`p-3 text-sm ${item.name.startsWith('  -') ? 'pl-8 text-surface-400' : 'text-surface-200 font-medium'}`}>
-                      {item.name}
-                    </td>
-                    <td className="p-3 text-right text-sm text-white font-mono">
-                      {item.amount > 0 ? `₹ ${item.amount.toLocaleString('en-IN')}` : ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-4 border-t border-surface-800 bg-surface-950 flex justify-between items-center text-green-50">
-             <span className="font-bold text-lg">Total</span>
-             <span className="font-bold text-xl font-mono border-double border-b-4 border-surface-600 pb-1">
-               ₹ {totalAssets.toLocaleString('en-IN')}
-             </span>
+
+          {renderSection('ASSETS')}
+
+          {profit < 0 && (
+            <div className="bs-group">
+              <div className="bs-group-header">
+                <span>Net Loss</span>
+                <span className="font-mono text-sm font-semibold text-red-400">{fmt(profit)}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="bs-total-row">
+            <span>Total</span>
+            <span className="font-mono font-bold text-white">{fmt(totalAssets)}</span>
           </div>
         </div>
+      </div>
 
+      {/* P&L Mini Summary */}
+      <div className="bs-pnl-footer">
+        <span className="text-surface-400 text-xs">P&amp;L Summary:</span>
+        <span className="text-blue-400 text-xs font-mono">Income: {fmt(income)}</span>
+        <span className="text-orange-400 text-xs font-mono">Expenses: {fmt(expenses)}</span>
+        <span className={`text-sm font-bold font-mono ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {profit >= 0 ? 'Net Profit' : 'Net Loss'}: {fmt(profit)}
+        </span>
       </div>
     </div>
-  );
+  )
 }

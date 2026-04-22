@@ -1,107 +1,191 @@
-import React, { useState } from 'react';
-import { Calendar, Search, Filter, Download } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react'
+import { useCompanyStore } from '../../store'
+import { useNavigationStore } from '../../hooks/useNavigationStore'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { getVouchers, deleteVoucher } from '../../lib/db'
+
+type VType = 'ALL' | 'SALES' | 'PURCHASE' | 'RECEIPT' | 'PAYMENT' | 'CONTRA' | 'JOURNAL'
+
+const TYPE_COLOR: Record<string, string> = {
+  SALES: 'text-green-400 bg-green-400/10',
+  PURCHASE: 'text-blue-400 bg-blue-400/10',
+  RECEIPT: 'text-emerald-400 bg-emerald-400/10',
+  PAYMENT: 'text-red-400 bg-red-400/10',
+  CONTRA: 'text-amber-400 bg-amber-400/10',
+  JOURNAL: 'text-purple-400 bg-purple-400/10',
+  CREDIT_NOTE: 'text-orange-400 bg-orange-400/10',
+  DEBIT_NOTE: 'text-pink-400 bg-pink-400/10',
+}
 
 export default function DayBookPage() {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const { activeCompany } = useCompanyStore()
+  const { navigateTo, periodFrom, periodTo, setShowPeriodSelector } = useNavigationStore()
 
-  // Mock data representing exact double entry Immutable Ledger Postings
-  const dayBookEntries = [
-    { id: 'VCH-001', type: 'RECEIPT', particular: 'Rahul Electronics', debit: 25000, credit: 0, time: '10:15 AM' },
-    { id: 'VCH-001', type: 'RECEIPT', particular: 'HDFC Bank', debit: 0, credit: 25000, time: '10:15 AM' },
-    
-    { id: 'VCH-002', type: 'PAYMENT', particular: 'Office Rent A/C', debit: 15000, credit: 0, time: '11:30 AM' },
-    { id: 'VCH-002', type: 'PAYMENT', particular: 'Petty Cash', debit: 0, credit: 15000, time: '11:30 AM' },
-    
-    { id: 'INV-1024', type: 'SALES', particular: 'Sharma Computers', debit: 59000, credit: 0, time: '02:45 PM' },
-    { id: 'INV-1024', type: 'SALES', particular: 'Sales A/C', debit: 0, credit: 50000, time: '02:45 PM' },
-    { id: 'INV-1024', type: 'SALES', particular: 'CGST Payable', debit: 0, credit: 4500, time: '02:45 PM' },
-    { id: 'INV-1024', type: 'SALES', particular: 'SGST Payable', debit: 0, credit: 4500, time: '02:45 PM' },
-  ];
+  const [vouchers, setVouchers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterType, setFilterType] = useState<VType>('ALL')
+  const [search, setSearch] = useState('')
 
-  const totalDebit = dayBookEntries.reduce((sum, e) => sum + e.debit, 0);
-  const totalCredit = dayBookEntries.reduce((sum, e) => sum + e.credit, 0);
+  const load = useCallback(async () => {
+    if (!activeCompany?.id) return
+    setLoading(true)
+    const data = await getVouchers(activeCompany.id, {
+      from: periodFrom, to: periodTo,
+      type: filterType === 'ALL' ? undefined : filterType
+    })
+    setVouchers(data)
+    setLoading(false)
+  }, [activeCompany?.id, periodFrom, periodTo, filterType])
+
+  useEffect(() => { load() }, [load])
+
+  useKeyboardShortcuts([
+    { key: 'F2', handler: () => setShowPeriodSelector(true) },
+    { key: 'F5', handler: () => load() },
+    { key: 'F8', handler: () => navigateTo('voucher-sales') },
+    { key: 'F9', handler: () => navigateTo('voucher-purchase') },
+  ])
+
+  const filtered = vouchers.filter(v =>
+    !search ||
+    v.voucherNumber?.toLowerCase().includes(search.toLowerCase()) ||
+    v.partyName?.toLowerCase().includes(search.toLowerCase()) ||
+    v.narration?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totalAmt = filtered.reduce((s: number, v: any) => s + (v.totalAmount || 0), 0)
+
+  const TYPE_LABELS: Record<string, string> = {
+    ALL: 'All', SALES: 'Sales', PURCHASE: 'Purchase',
+    RECEIPT: 'Receipt', PAYMENT: 'Payment', CONTRA: 'Contra', JOURNAL: 'Journal'
+  }
+
+  const formatDate = (d: string) => {
+    try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }
+    catch { return d }
+  }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-fade-in p-6">
-      
+    <div className="report-page">
       {/* Header */}
-      <div className="flex justify-between items-center bg-surface-900 border border-surface-800 p-6 rounded-2xl shadow-xl backdrop-blur-sm">
+      <div className="report-header">
         <div>
-          <h1 className="text-3xl font-bold font-display text-white">Day Book</h1>
-          <p className="text-surface-400 mt-1 text-sm">Daily Ledger Activity & Vouchers</p>
+          <h1 className="tally-form-title">Day Book</h1>
+          <p className="text-surface-500 text-xs">
+            {activeCompany?.name} &nbsp;·&nbsp;
+            {formatDate(periodFrom)} to {formatDate(periodTo)}
+            <button onClick={() => setShowPeriodSelector(true)} className="text-brand-400 hover:text-brand-300 ml-2 text-[10px]">
+              [F2: Change Period]
+            </button>
+          </p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-surface-950 border border-surface-800 rounded-lg p-2 px-4 shadow-inner">
-            <Calendar size={16} className="text-brand-400" />
-            <input 
-              type="date" 
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-white outline-none"
-            />
-          </div>
-          <button className="flex items-center gap-2 bg-surface-800 hover:bg-surface-700 text-white px-4 py-2 rounded-lg transition-all border border-surface-700">
-            <Download size={16} /> Export
+        <div className="flex gap-2">
+          <button onClick={() => navigateTo('voucher-sales')} className="tally-btn-accept text-xs">
+            New Sales <span className="text-[10px] opacity-60">F8</span>
+          </button>
+          <button onClick={() => navigateTo('voucher-purchase')} className="tally-btn-cancel text-xs">
+            New Purchase <span className="text-[10px] opacity-60">F9</span>
           </button>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="bg-surface-900 rounded-2xl shadow-lg border border-surface-800 overflow-hidden ring-1 ring-white/5">
-        
-        {/* Toolbar */}
-        <div className="flex justify-between p-4 border-b border-surface-800 bg-surface-950/30">
-          <div className="relative w-64">
-             <Search size={16} className="absolute left-3 top-2.5 text-surface-500" />
-             <input 
-               type="text" 
-               placeholder="Search entries..." 
-               className="w-full bg-surface-950 border border-surface-800 rounded-lg pl-9 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500 outline-none"
-             />
-          </div>
-          <button className="flex items-center gap-2 text-surface-400 hover:text-white text-sm transition-colors">
-            <Filter size={16} /> Filter 
+      {/* Filters */}
+      <div className="report-filter-bar">
+        {(Object.keys(TYPE_LABELS) as VType[]).map(t => (
+          <button
+            key={t}
+            onClick={() => setFilterType(t)}
+            className={`report-filter-btn ${filterType === t ? 'report-filter-btn-active' : ''}`}
+          >
+            {TYPE_LABELS[t]}
           </button>
-        </div>
+        ))}
+        <div className="flex-1" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search vouchers..."
+          className="tally-field-input text-xs w-44"
+        />
+      </div>
 
-        {/* Table */}
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-surface-950/80 text-surface-400 text-xs uppercase tracking-wider font-semibold border-b border-surface-800">
-              <th className="p-4 w-24">Time</th>
-              <th className="p-4 w-32">Voucher No</th>
-              <th className="p-4 w-32">Voucher Type</th>
-              <th className="p-4">Particulars (Ledger)</th>
-              <th className="p-4 w-32 text-right">Debit (₹)</th>
-              <th className="p-4 w-32 text-right">Credit (₹)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-800 text-sm">
-            {dayBookEntries.map((entry, idx) => (
-              <tr key={idx} className="hover:bg-surface-800/30 transition-colors">
-                <td className="p-4 text-surface-500">{entry.time}</td>
-                <td className="p-4 font-mono text-brand-300">{entry.id}</td>
-                <td className="p-4 text-surface-300">{entry.type}</td>
-                <td className="p-4 text-white font-medium">{entry.particular}</td>
-                <td className="p-4 text-right text-surface-300">{entry.debit > 0 ? entry.debit.toFixed(2) : ''}</td>
-                <td className="p-4 text-right text-surface-300">{entry.credit > 0 ? entry.credit.toFixed(2) : ''}</td>
+      {/* Table */}
+      <div className="report-table-container">
+        {loading ? (
+          <div className="text-center py-16 text-surface-500">Loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 text-surface-500">
+            <span className="text-4xl block mb-3">📋</span>
+            No vouchers for this period
+            <br />
+            <span className="text-xs text-surface-600 mt-1 block">
+              Press F8 for Sales or F9 for Purchase
+            </span>
+          </div>
+        ) : (
+          <table className="report-table">
+            <thead>
+              <tr className="report-table-head">
+                <th className="text-left">Date</th>
+                <th className="text-left">Voucher No.</th>
+                <th className="text-left">Type</th>
+                <th className="text-left">Party</th>
+                <th className="text-left">Narration</th>
+                <th className="text-right">Amount (₹)</th>
+                <th className="text-center">Status</th>
+                <th className="w-8"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Footer Totals */}
-        <div className="bg-surface-950 border-t border-surface-800 p-4 px-6 flex justify-end gap-16">
-          <div className="text-right">
-            <div className="text-xs text-surface-500 uppercase tracking-widest font-semibold mb-1">Total Debit</div>
-            <div className="text-xl font-bold font-mono text-white">₹ {totalDebit.toFixed(2)}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-surface-500 uppercase tracking-widest font-semibold mb-1">Total Credit</div>
-            <div className="text-xl font-bold font-mono text-white">₹ {totalCredit.toFixed(2)}</div>
-          </div>
-        </div>
+            </thead>
+            <tbody>
+              {filtered.map((v: any) => (
+                <tr key={v.id} className="report-table-row group">
+                  <td className="text-xs font-mono">{formatDate(v.voucherDate)}</td>
+                  <td className="text-xs font-mono text-brand-400">{v.voucherNumber}</td>
+                  <td>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${TYPE_COLOR[v.voucherType] ?? ''}`}>
+                      {v.voucherType}
+                    </span>
+                  </td>
+                  <td className="text-sm">{v.partyName || <span className="text-surface-600 text-xs">—</span>}</td>
+                  <td className="text-xs text-surface-400 max-w-48 truncate">{v.narration || '—'}</td>
+                  <td className="text-right font-mono font-semibold">
+                    {v.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="text-center">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      v.status === 'CONFIRMED' ? 'text-green-400 bg-green-400/10' :
+                      v.status === 'DRAFT' ? 'text-amber-400 bg-amber-400/10' :
+                      'text-red-400 bg-red-400/10'
+                    }`}>{v.status}</span>
+                  </td>
+                  <td>
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Delete ${v.voucherNumber}?`)) {
+                          await deleteVoucher(v.id)
+                          load()
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-surface-600 hover:text-red-400 text-xs transition-all"
+                    >✕</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="report-table-foot">
+                <td colSpan={5} className="text-right text-xs text-surface-400">
+                  {filtered.length} vouchers
+                </td>
+                <td className="text-right font-mono font-bold text-white text-sm">
+                  ₹{totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          </table>
+        )}
       </div>
     </div>
-  );
+  )
 }
